@@ -78,22 +78,18 @@ if __name__ == "__main__":
     predictors = ["Close", "Volume", "Open", "High", "Low"]
     model = train_random_forest_model(sp500, predictors, "Target")
 
-    # Fetch and process data for additional tickers
+    # Process data/train model for additional tickers
     additional_tickers = ["AAPL", "MSFT", "AMZN", "NVDA", "GOOGL", "META", "GOOG", "TSLA", "UNH"]
     for ticker in additional_tickers:
         additional_data = fetch_stock_data(ticker, start_date="1990-01-02")
         sp500 = generate_additional_ticker_features(sp500, additional_data, horizon=1, ticker=ticker)
 
-    # Update predictors with the additional features
     combined_predictors = predictors + [f"Prediction_{ticker}" for ticker in additional_tickers]
 
-    # Impute missing values in the final dataframe
     sp500 = sp500.ffill().dropna()
 
-    # Train the final model
     final_model = train_random_forest_model(sp500, combined_predictors, "Target")
 
-    # Perform backtesting and evaluation as before
     backtest_results = backtest(sp500, final_model, combined_predictors)
     calculate_precision(backtest_results)
     display_value_counts(backtest_results)

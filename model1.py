@@ -35,6 +35,9 @@ def predict(train, test, predictors, model):
 def generate_additional_ticker_features(sp500, ticker_data, horizon, ticker):
     ticker_data = create_target_column(ticker_data, horizon=1)
     ticker_predictors = ["Close", "Volume", "Open", "High", "Low"]
+
+    print(f"\nAdditional Ticker: {ticker} - Before Training\n{ticker_data.head()}")
+
     
     # Train model for the additional ticker
     ticker_model = train_random_forest_model(ticker_data, ticker_predictors, "Target")
@@ -42,13 +45,11 @@ def generate_additional_ticker_features(sp500, ticker_data, horizon, ticker):
     # Generate predictions for the additional ticker
     ticker_predictions = predict(ticker_data, ticker_data, ticker_predictors, ticker_model)
     
-    # Add the predictions as a feature for the S&P 500 dataframe
-    sp500[f"Prediction_{ticker}"] = ticker_predictions["Predictions"]
+    # Create a new dataframe to store predictions for the additional ticker
+    ticker_predictions_df = pd.DataFrame(index=sp500.index)
+    ticker_predictions_df[f"Prediction_{ticker}"] = ticker_predictions["Predictions"]
 
-    # Forward-fill missing values in the dataframe
-    sp500 = sp500.ffill()
-
-    return sp500
+    return ticker_predictions_df
 
 def backtest(data, model, predictors, start=2500, step=250):
     all_predictions = []
@@ -78,11 +79,19 @@ if __name__ == "__main__":
     predictors = ["Close", "Volume", "Open", "High", "Low"]
     model = train_random_forest_model(sp500, predictors, "Target")
 
-    # Process data/train model for additional tickers
-    additional_tickers = ["AAPL", "MSFT", "AMZN", "NVDA", "GOOGL", "META", "GOOG", "TSLA", "UNH"]
+  # Process data/train model for additional tickers
+    # additional_tickers = ["AAPL", "MSFT", "AMZN", "NVDA", "GOOGL", "META", "GOOG", "TSLA", "UNH"]
+    additional_tickers = ["AAPL", "MSFT", "AMZN", "NVDA", "GOOGL", "GOOG", "UNH"]
+    additional_predictions_dfs = []
+
     for ticker in additional_tickers:
         additional_data = fetch_stock_data(ticker, start_date="1990-01-02")
-        sp500 = generate_additional_ticker_features(sp500, additional_data, horizon=1, ticker=ticker)
+        ticker_predictions_df = generate_additional_ticker_features(sp500, additional_data, horizon=1, ticker=ticker)
+        additional_predictions_dfs.append(ticker_predictions_df)
+
+    # Merge all additional ticker predictions into the S&P 500 dataframe
+    for i, ticker in enumerate(additional_tickers):
+        sp500 = pd.merge(sp500, additional_predictions_dfs[i], left_index=True, right_index=True)
 
     combined_predictors = predictors + [f"Prediction_{ticker}" for ticker in additional_tickers]
 

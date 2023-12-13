@@ -2,7 +2,6 @@ import yfinance as yf
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import precision_score
-import cpi
 
 def fetch_stock_data(ticker, start_date="1990-01-02 00:00:00-05:00", end_date=None):
     stock = yf.Ticker(ticker)
@@ -91,7 +90,7 @@ def display_value_counts(predictions):
     print("Value Counts of Predictions:")
     print(value_counts)
 
-if __name__ == "__main__":
+def process_data_and_backtest():
     sp500 = fetch_stock_data("^GSPC", start_date="1990-01-02")
     sp500 = create_target_column(sp500, horizon=1)
 
@@ -123,5 +122,10 @@ if __name__ == "__main__":
     display_value_counts(backtest_results)
 
     sp500['Predictions_SP500'] = backtest_results['Predictions']
+    
 
-    print(sp500)
+    return sp500[['Predictions_SP500']]
+
+if __name__ == "__main__":
+    result_df = process_data_and_backtest()
+    print(result_df)

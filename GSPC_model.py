@@ -2,20 +2,27 @@ import yfinance as yf
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import precision_score
+from FRED_data import fetch_fred_data, important_series
 
 def fetch_stock_data(ticker, start_date="1990-01-02 00:00:00-05:00", end_date=None):
     stock = yf.Ticker(ticker)
     stock_data = stock.history(start=start_date, end=end_date)
     
-    # Check if 'Dividends' and 'Stock Splits' columns exist before dropping
     columns_to_drop = ["Dividends", "Stock Splits"]
     stock_data = stock_data.drop(columns=[col for col in columns_to_drop if col in stock_data.columns], errors='ignore')
 
-    # Calculate Magnitude and Velocity
     stock_data = calculate_magnitude(stock_data, window=10)
     stock_data = calculate_velocity(stock_data, window=10)
 
     return stock_data
+
+def create_economic_data_column(data, economic_data):
+    for series_id in economic_data.columns:
+        economic_data_series = economic_data[series_id].tz_localize('UTC').tz_convert('America/New_York')
+        economic_data_series = economic_data_series.reindex(data.index, method='ffill')
+        data[f"{series_id}"] = economic_data_series
+
+    return data
 
 def calculate_magnitude(data, window=10):
     data['Magnitude'] = data['High'] - data['Low']
@@ -54,8 +61,6 @@ def generate_additional_ticker_features(sp500, ticker_data, horizon, ticker):
     ticker_data = create_target_column(ticker_data, horizon=1)
     ticker_predictors = ["Close", "Volume", "Open", "High", "Low", "Magnitude", "Velocity"]
 
-    # print(f"\nAdditional Ticker: {ticker} - Before Training\n{ticker_data.head()}")
-
     # Train model for the additional ticker
     ticker_model = train_random_forest_model(ticker_data, ticker_predictors, "Target")
     
@@ -81,6 +86,11 @@ def backtest(data, model, predictors, start=2500, step=250):
 
     return pd.concat(all_predictions)
 
+def calculate_monthly_percent_change(data, monthly_indicator_column):
+    data[f'{monthly_indicator_column}_pct_change'] = data[monthly_indicator_column].pct_change()
+
+    return data
+
 def calculate_precision(predictions):
     precision = precision_score(predictions["Target"], predictions["Predictions"])
     print("Precision:", precision)
@@ -91,11 +101,14 @@ def display_value_counts(predictions):
     print(value_counts)
 
 def process_data_and_backtest():
+    economic_data = fetch_fred_data(important_series, '1990-01-01') 
     sp500 = fetch_stock_data("^GSPC", start_date="1990-01-02")
+
     sp500 = create_target_column(sp500, horizon=1)
+    sp500 = create_economic_data_column(sp500, economic_data)
 
     # Train the S&P 500 model first
-    predictors = ["Close", "Volume", "Open", "High", "Low", "Magnitude", "Velocity"]
+    predictors = ["Close", "Volume", "Open", "High", "Low", "Magnitude", "Velocity"] + [f"{series}" for series in important_series]
     model = train_random_forest_model(sp500, predictors, "Target")
 
     # Process data/train model for additional tickers

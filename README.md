@@ -8,6 +8,7 @@ This project includes Python scripts for fetching historical stock data, trainin
 - **GSPC_model.ipynb:** Jupyter Notebook for interactive data exploration and visualization.
 - **simulation.py:** Python script for simulating a trading algorithm using model predictions.
 - **simulation.ipynb:** Jupyter Notebook for interactive simulation of the trading algorithm.
+- **fetch_fred_data.py:** Python script for fetching historical economic indicators data from the Federal Reserve Economic Data (FRED) using the `fredapi` library.
 
 ## GSPC_model.py
 
@@ -24,6 +25,10 @@ This script simulates a simple trading algorithm based on the predictions genera
 ## simulation.ipynb
 
 This Jupyter Notebook provides an interactive environment for simulating the trading algorithm using the functions defined in simulation.py. It allows users to experiment with different parameters and visualize the results.
+
+## fetch_fred_data.py
+
+This Python script contains a function to fetch historical economic indicators data from the Federal Reserve Economic Data (FRED) using the `fredapi` library. The fetched data includes series such as Consumer Price Index, Dow Jones Industrial Average, Federal Funds Interest Rate, and more.
 
 ## Usage
 
@@ -55,3 +60,4 @@ This Jupyter Notebook provides an interactive environment for simulating the tra
 - `pandas`: Data manipulation and analysis.
 - `scikit-learn`: Machine learning library for model training and evaluation.
 - `jupyterlab`: Interactive computing in a Jupyter environment (required for running Jupyter Notebooks).
+- `fredapi`: Fetch economic indicators data from FRED.
